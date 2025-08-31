@@ -1,0 +1,30 @@
+name: caddy
+services:
+  caddy:
+    build: . # Dockerfile
+    container_name: caddy
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_DOMAIN=${TS_DOMAIN:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+    networks:
+      - internal_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal_net:
+    external: true

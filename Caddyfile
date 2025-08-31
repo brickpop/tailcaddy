@@ -1,0 +1,57 @@
+{
+    # debug
+
+    # Reads $TS_AUTHKEY on the first run
+    tailscale {
+        state_dir /data/tsnet-state
+    }
+}
+
+(cors) {
+  @cors_preflight method OPTIONS
+  @cors header Origin {args.0}
+
+  handle @cors_preflight {
+    header Access-Control-Allow-Origin "{args.0}"
+    header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE"
+    header Access-Control-Allow-Headers "Content-Type"
+    header Access-Control-Max-Age "3600"
+    respond "" 204
+  }
+
+  handle @cors {
+    header Access-Control-Allow-Origin "{args.0}"
+    header Access-Control-Expose-Headers "Link"
+  }
+}
+
+# HTTP SERVERS
+
+{$BASE_DOMAIN} {
+    bind tailscale/
+    tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+    }
+    reverse_proxy http://my-docker-host:8080
+}
+
+www.{$BASE_DOMAIN} {
+    bind tailscale/
+    tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+    }
+    reverse_proxy http://my-docker-host:8080
+}
+
+s3.{$BASE_DOMAIN} {
+    bind tailscale/
+    tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+    }
+
+    # Service with CORS
+    import cors https://s3.{$BASE_DOMAIN}
+
+    # Resolving from a private Tailscale subdomain
+    reverse_proxy http://s3.{$TS_DOMAIN}:8000
+}
