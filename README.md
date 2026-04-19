@@ -2,7 +2,7 @@
 
 **Friendly HTTPS for self-hosted services, reachable only over your tailnet.**
 
-Put your local apps behind clean hostnames like `cloud.example.com` with valid, browser-trusted TLS certificates — without opening a single port to the public internet. Any device on your tailnet gets a green lock; to the rest of the world, the service simply doesn't answer.
+Put your local apps behind clean hostnames like `cloud.example.com` with valid, browser-trusted TLS certificates, without opening a single port to the public internet. Any device on your tailnet gets a green lock; to the rest of the world, the service simply doesn't answer.
 
 ## What you get
 
@@ -17,7 +17,7 @@ Three moving parts:
 
 1. **Caddy** terminates TLS and reverse-proxies to your services.
 2. **Cloudflare** hosts your domain's DNS. Caddy uses the Cloudflare API to solve Let's Encrypt's DNS challenge, so certificates are issued without ever needing a public HTTP listener.
-3. **Tailscale** carries the actual traffic. Caddy binds its HTTPS listener to its Tailscale interface only — your tailnet devices can reach it; nothing else can.
+3. **Tailscale** carries the actual traffic. Caddy binds its HTTPS listener to its Tailscale interface only, your tailnet devices can reach it; nothing else can.
 
 The result: a public DNS record pointing at a private `100.x.x.x` address. The hostname resolves from anywhere, but the IP is only routable inside your tailnet.
 
@@ -43,7 +43,7 @@ cp .env.example .env
 Edit `Caddyfile` to declare a hostname for each service you want to expose (see [Connecting your services](#connecting-your-services) for examples). Then:
 
 ```bash
-docker network create caddy_net   # once — the shared network your services will join
+docker network create caddy_net   # once, the shared network your services will join
 docker compose up -d
 ```
 
@@ -52,9 +52,10 @@ On first boot Caddy joins your tailnet (it will appear in the
 
 ## Point DNS at Caddy
 
-In Cloudflare, create a DNS record for each hostname you want to use (or a wildcard `*.example.com`), pointing at Caddy's **Tailscale IP** (`100.x.x.x`, shown in the Tailscale admin console). Set it to **DNS only** — no Cloudflare proxying.
+In Cloudflare, create a DNS record for each hostname you want to use (or a wildcard `*.example.com`), pointing at Caddy's **Tailscale IP** (`100.x.x.x`, shown in the Tailscale admin console).
 
-Yes, it's a public DNS record pointing at a private IP. That's intentional: the name resolves everywhere, but the IP only routes inside your tailnet. The TLS certificate is still valid because DNS-01 doesn't require the host to be publicly reachable. From a tailnet device, HTTPS works; from anywhere else, the browser just times out.
+> [!IMPORTANT]
+> Set the record to **DNS only**, no Cloudflare proxying. The orange cloud breaks cert issuance because Cloudflare can't reach a `100.x.x.x` IP.
 
 ## Connecting your services
 
@@ -125,10 +126,10 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 ## FAQ
 
-**It doesn't work from outside my tailnet.** Correct — that's the whole point. Connect a device to your tailnet and try again.
+**It doesn't work from outside my tailnet.** Correct, that's the whole point. Connect a device to your tailnet and try again.
 
 **Can I use another DNS provider?** Yes. Replace `caddy-dns/cloudflare` in the `Dockerfile` with any of the [caddy-dns providers](https://github.com/caddy-dns) and adjust the `tls { dns ... }` block in the `Caddyfile`.
 
-**Can I also expose a service publicly?** Yes, but this repo is deliberately scoped to the tailnet-only case. Drop `bind tailscale/` on a given host to listen on all interfaces — but then you own the public surface area.
+**Can I also expose a service publicly?** Yes, but this repo is deliberately scoped to the tailnet-only case. Drop `bind tailscale/` on a given host to listen on all interfaces, but then you own the public surface area.
 
 **What if I don't use Cloudflare for DNS?** You need a provider whose API is supported by a `caddy-dns` plugin (most major ones are), and you need to be able to manage records via API.
