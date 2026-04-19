@@ -1,4 +1,4 @@
-name: caddy
+name: tailcaddy
 services:
   caddy:
     build: . # Dockerfile
@@ -14,17 +14,12 @@ services:
       - TS_DOMAIN=${TS_DOMAIN:-}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     networks:
-      - internal_net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - caddy_net
 
 volumes:
   caddy_data:
   caddy_config:
 
 networks:
-  internal_net:
+  caddy_net:
     external: true
